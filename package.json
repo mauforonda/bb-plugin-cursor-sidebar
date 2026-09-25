@@ -10,7 +10,7 @@
   },
   "engines": {
     "bb": ">=0.42",
-    "bbPluginSdk": ">=0.4.47"
+    "bbPluginSdk": ">=0.5.9"
   },
   "bb": {
     "name": "Cursor Sidebar",

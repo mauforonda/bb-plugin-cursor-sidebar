@@ -72,7 +72,7 @@ the actions menu does that work instead.
 
 ## Requirements
 
-BB 0.42 or newer. The plugin fills BB's experimental thread-list slot, which
+BB with Plugin SDK 0.5.9 or newer. The plugin fills BB's experimental thread-list slot, which
 replaces BB's own thread list. Turn it off with `bb plugin disable cursor-sidebar`.
 
 ## Install
