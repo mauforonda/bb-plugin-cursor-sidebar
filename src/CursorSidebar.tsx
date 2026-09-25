@@ -105,6 +105,7 @@ import { useShortcutGuide } from "./useShortcutGuide";
 import { ICON_BTN } from "./icon-btn";
 import { openHostAddProject } from "./open-host-add-project";
 import { ShowMoreButton } from "./ShowMoreButton";
+import { conversationActivityAt } from "./activity-time";
 
 
 /**
@@ -390,7 +391,7 @@ export function CursorSidebar({ activeThreadId, onNavigate }: PluginThreadListPr
       let lastActiveAt = 0;
       for (const thread of group) {
         if (thread.isArchived) continue;
-        lastActiveAt = Math.max(lastActiveAt, thread.updatedAt);
+        lastActiveAt = Math.max(lastActiveAt, conversationActivityAt(thread));
       }
       facts.set(projectId, { status: aggregateSectionStatus(group).status, lastActiveAt });
     }
@@ -811,19 +812,23 @@ export function CursorSidebar({ activeThreadId, onNavigate }: PluginThreadListPr
     };
   }, [activeThreadId, now, projectsGrouping, sectionByThreadId, sectionsById, view]);
 
-  // Reveal once per navigation (and once when the store finishes loading).
-  // Pending is tracked separately: if data has not arrived, the request stays
-  // pending rather than being consumed, and user folding is respected after.
-  const lastSeenThread = useRef<string | null | undefined>(undefined);
+  // Reveal the selected conversation on mount and after navigation. Pending is
+  // tracked separately so an arriving feed can still open its actual group.
+  const lastSeenReveal = useRef<string | null>(null);
   useEffect(() => {
-    // Restoring an already-open child route must not override default folds.
-    // Subsequent explicit navigation may reveal its actual ancestors once.
-    if (lastSeenThread.current === undefined) {
-      lastSeenThread.current = activeThreadId;
+    if (activeThreadId === null) {
+      lastSeenReveal.current = null;
       return;
     }
-    if (lastSeenThread.current === activeThreadId || reveal === null) return;
-    lastSeenThread.current = activeThreadId;
+    if (reveal === null) return;
+    const revealKey = JSON.stringify([
+      activeThreadId,
+      view.groupBy,
+      reveal.updatedAgeKey,
+      reveal.collapsedGroupKey,
+    ]);
+    if (lastSeenReveal.current === revealKey) return;
+    lastSeenReveal.current = revealKey;
     // A hidden/filtered thread reveals its existing home and ancestors, so the
     // group heading that contains it opens rather than duplicating the row.
     if (projectsGrouping && homeKindOf(reveal.sectionId) === "project") {
@@ -839,7 +844,7 @@ export function CursorSidebar({ activeThreadId, onNavigate }: PluginThreadListPr
     if (reveal.updatedAgeKey) expandedAges.add(reveal.updatedAgeKey);
     if (reveal.collapsedGroupKey) collapsedGroups.remove(reveal.collapsedGroupKey);
     setExpandedParents((current) => new Set([...current, ...reveal.ancestors]));
-  }, [activeThreadId, reveal, expandedAges, collapsedGroups, expandedThreads, topGroupCollapsed, projectsGrouping]);
+  }, [activeThreadId, reveal, expandedAges, collapsedGroups, expandedThreads, topGroupCollapsed, projectsGrouping, view.groupBy]);
 
   const moveProjectWithinNative = useCallback(
     (projectId: string, offset: -1 | 1) => {

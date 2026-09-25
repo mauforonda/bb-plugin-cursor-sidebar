@@ -103,10 +103,8 @@ export function planConversations(
 
 /**
  * Page one grouped bucket (Today, a status, an environment): the caller's
- * display order, then a hard page limit. Families keep the selected
- * conversation order — manual reorder included — instead of being forced back
- * to recency, so a drag inside a bucket survives. The open chat is not
- * injected on top, so toggling a heading cannot make a bonus row appear.
+ * display order, then a page limit. The open chat's family remains visible
+ * even when it falls beyond that page. Families keep the selected order.
  */
 export function pageGroupRows(
   rows: readonly DisplayRow[],
@@ -133,6 +131,10 @@ export function pageGroupRows(
     }
   }
   const keepRoots = new Set(rootOrder.slice(0, Math.max(0, limit)));
+  if (options.activeThreadId !== null) {
+    const activeRoot = familyRootId(parentOf, options.activeThreadId);
+    if (family.has(activeRoot)) keepRoots.add(activeRoot);
+  }
   const shown: DisplayRow[] = [];
   for (const root of rootOrder) {
     if (!keepRoots.has(root)) continue;

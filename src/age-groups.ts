@@ -9,8 +9,8 @@ export function ageGroupKey(sectionId: string, group: AgeGroup): string {
 
 /** Calendar boundaries in the user's timezone, including daylight-saving days.
  *
- * Uses native `updatedAt` (last thread activity), never `lastReadAt` or
- * observation state, so incidental reads do not reclassify a thread.
+ * Callers pass conversation activity, never thread metadata updates or
+ * incidental reads, so unrelated changes do not reclassify a thread.
  * Cutoffs are 1, 7 and 30 full calendar days before today, so any elapsed
  * label under 1d stays in Today/Yesterday, any under 7d stays inside
  * Last 7 days and any under 30d stays inside Last 30 days. This is the

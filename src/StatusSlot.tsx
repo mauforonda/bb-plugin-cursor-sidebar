@@ -5,6 +5,7 @@ import { isActivityIndicator } from "./StatusGlyph";
 import { relativeTimeLabel } from "./relative-time";
 import type { ThreadStatusKind } from "./status";
 import { isWorking } from "./activity";
+import { conversationActivityAt } from "./activity-time";
 
 function activityStatusKind(status: ThreadStatusKind | undefined): boolean {
   return status === "working";
@@ -64,7 +65,7 @@ export function ThreadAge({ thread, now }: { thread: PluginSidebarThread; now: n
         "tabular-nums text-xs text-sidebar-foreground/73",
       )}
     >
-      {relativeTimeLabel(thread.updatedAt, now)}
+      {relativeTimeLabel(conversationActivityAt(thread), now)}
     </span>
   );
 }

@@ -13,6 +13,7 @@ import type { SidebarView } from "./server";
 import { AGE_GROUPS, bucketForTimestamp } from "./age-groups";
 import type { DisplayRow } from "./forest";
 import { familyRootId } from "./standalone-groups";
+import { conversationActivityAt } from "./activity-time";
 import {
   THREAD_STATUS_LABEL,
   THREAD_STATUS_RANK,
@@ -332,12 +333,12 @@ function familyAggregates(
       aggregate = {
         status: facts.statusOf(thread),
         environmentGroup: environmentGroupOf(thread),
-        latestUpdatedAt: thread.updatedAt,
+        latestUpdatedAt: conversationActivityAt(thread),
         firstIndex: firstIndex++,
       };
       aggregates.set(root, aggregate);
     }
-    aggregate.latestUpdatedAt = Math.max(aggregate.latestUpdatedAt, thread.updatedAt);
+    aggregate.latestUpdatedAt = Math.max(aggregate.latestUpdatedAt, conversationActivityAt(thread));
     const status = facts.statusOf(thread);
     if (THREAD_STATUS_RANK[status] < THREAD_STATUS_RANK[aggregate.status]) {
       aggregate.status = status;
@@ -377,8 +378,8 @@ export function familyAwareComparator(
     facts.aggregateOf.get(facts.rootOf.get(thread.id) ?? thread.id);
   if (order === "updated") {
     return (left, right) => {
-      const leftAt = aggregateOf(left)?.latestUpdatedAt ?? left.updatedAt;
-      const rightAt = aggregateOf(right)?.latestUpdatedAt ?? right.updatedAt;
+      const leftAt = aggregateOf(left)?.latestUpdatedAt ?? conversationActivityAt(left);
+      const rightAt = aggregateOf(right)?.latestUpdatedAt ?? conversationActivityAt(right);
       return rightAt - leftAt || left.id.localeCompare(right.id);
     };
   }
@@ -393,8 +394,8 @@ export function familyAwareComparator(
       : ordinaryStatusRank(right);
     return (
       leftRank - rightRank ||
-      (rightAggregate?.latestUpdatedAt ?? right.updatedAt) -
-        (leftAggregate?.latestUpdatedAt ?? left.updatedAt) ||
+      (rightAggregate?.latestUpdatedAt ?? conversationActivityAt(right)) -
+        (leftAggregate?.latestUpdatedAt ?? conversationActivityAt(left)) ||
       left.id.localeCompare(right.id)
     );
   };
@@ -707,7 +708,7 @@ export function groupOrdinaryRows(
         ? {
             status: facts.statusOf(row.thread),
             environmentGroup: environmentGroupOf(row.thread),
-            latestUpdatedAt: row.thread.updatedAt,
+            latestUpdatedAt: conversationActivityAt(row.thread),
             firstIndex: 0,
           }
         : aggregates.get(root);
@@ -720,6 +721,26 @@ export function groupOrdinaryRows(
     }
     group.rows.push(row);
     group.latestUpdatedAt = Math.max(group.latestUpdatedAt, aggregate.latestUpdatedAt);
+  }
+
+  // The pooled section combines several project homes. Its input order follows
+  // project order, so sort complete families inside each bucket before paging.
+  // Keep each family's flattened rows together and in their original tree order.
+  const compareFamilies = familyAwareComparator(view.sortConversationsBy, {
+    rootOf,
+    aggregateOf: aggregates,
+  });
+  for (const group of groups.values()) {
+    const families = new Map<string, DisplayRow[]>();
+    for (const row of group.rows) {
+      const root = rootOf.get(row.thread.id) ?? row.thread.id;
+      const family = families.get(root);
+      if (family) family.push(row);
+      else families.set(root, [row]);
+    }
+    group.rows = [...families.values()]
+      .sort((left, right) => compareFamilies(left[0]!.thread, right[0]!.thread))
+      .flat();
   }
 
   const sorted = [...groups.values()].sort((left, right) => {

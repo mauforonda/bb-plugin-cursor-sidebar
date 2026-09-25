@@ -32,6 +32,10 @@ if your browser will not play the WebP.
 The three order controls live under Ordering and the two filters live under
 Filters.
 
+Updated groups and age labels use conversation activity rather than unrelated
+thread metadata changes. The selected conversation stays visible when a group
+has more than one page of rows.
+
 The menu button shows a warning mark when a view change has not reached the
 server. The notice inside the menu has a Retry button.
 
@@ -74,7 +78,7 @@ replaces BB's own thread list. Turn it off with `bb plugin disable cursor-sideba
 ## Install
 
 ```sh
-bb plugin install git:https://github.com/wy3z/bb-plugin-cursor-sidebar.git
+    bb plugin install git:https://github.com/mauforonda/bb-plugin-cursor-sidebar.git
 bb plugin reload cursor-sidebar
 ```
 

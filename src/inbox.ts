@@ -11,7 +11,7 @@ import type {
 } from "@get-bb/plugin-sdk/app";
 
 interface DisplayThread extends PluginSidebarThread {
-  displayTitle?: string;
+  displayTitle: string;
 }
 
 export function threadDisplayTitle(thread: DisplayThread): string {
